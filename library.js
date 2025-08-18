@@ -124,7 +124,7 @@ builder.add('components','feed', class extends builder.ComponentClass {
 
         // Create Title Block
         post.header = $(document.createElement('div')).addClass('title').appendTo(post);
-        post.header.title = $(document.createElement('h2')).addClass('title').text(data.title ?? (data.subject ?? '')).appendTo(post.header);
+        post.header.title = $(document.createElement('h2')).addClass('title').html(self._builder.Parser.parse(data.title ?? data.subject)).appendTo(post.header);
 
         // Create User Block
         post.owner = $(document.createElement('div')).addClass('owner').appendTo(post);
