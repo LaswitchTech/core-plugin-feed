@@ -98,6 +98,11 @@ builder.add('components','feed', class extends builder.ComponentClass {
             }
         }
 
+        // Check if the post already exists
+        if(this._posts[data.id ?? (this.#count + 1)]){
+            return this.edit(data.id ?? (this.#count + 1), data, callback);
+        }
+
         // Increment Post Count
         this.#count++;
 
@@ -263,5 +268,68 @@ builder.add('components','feed', class extends builder.ComponentClass {
 
         // Return Self
         return this;
+    }
+
+    edit(id, record, callback = null){
+
+        // Set Self
+        const self = this;
+
+        // Check if the post exists
+        if(!this._posts[id]){
+            console.warn('Post with ID ' + id + ' does not exist.');
+            return this;
+        }
+
+        // Update Post Data
+        const post = this._posts[id];
+        post.data = record;
+
+        // Update Title
+        if(record.title || record.subject){
+            post.header.title.html(self._builder.Parser.parse(record.title ?? record.subject));
+        }
+
+        // Update modified time
+        if(record.created !== record.modified){
+            const modified = new Date(record.modified);
+            post.owner.meta.metadata.edited.text(this._builder.Locale.get('Modified'));
+            post.owner.meta.metadata.edited.attr({
+                'title': modified.toLocaleString(),
+                'data-bs-toggle': 'tooltip',
+                'data-bs-title': modified.toLocaleString(),
+            });
+            new bootstrap.Tooltip(post.owner.meta.metadata.edited);
+        }
+
+        // Update Content
+        if(this._properties.iframed){
+            post.content.off('load'); // Remove previous load event handler
+            post.content.on('load', function() {
+                if (record.content != null) {
+                    var iframeDocument = post.content[0].contentDocument || post.content[0].contentWindow.document;
+                    iframeDocument.open();
+                    iframeDocument.write(`
+                        <style>
+                            html, body { background-color: transparent!important; margin: 0; padding: 0; scroll-behavior: smooth; }
+                            body { padding: 1rem; }
+                        </style>
+                        ${record.content}
+                    `);
+                    iframeDocument.close();
+                }
+            });
+            post.content.attr('src', 'about:blank'); // Reset src to trigger load event
+        } else {
+            post.content.html(record.content ?? '');
+        }
+
+        // Trigger Callback
+        if(typeof callback === 'function'){
+            callback(post);
+        }
+
+        // Return Self
+        return this
     }
 });
